@@ -1,0 +1,132 @@
+/* ============================================================
+   BASE & LAYOUT
+   ============================================================ */
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html,body{
+  height:100%;
+  overscroll-behavior-y: none;
+}
+
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* screens manage their own scroll */
+}
+
+button{ font-family: inherit; border: none; background: none; cursor: pointer; }
+textarea{ font-family: inherit; border: none; outline: none; resize: none; background: transparent; }
+
+.screen{
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ---------- Home screen ---------- */
+#home-screen{
+  display:flex;
+  flex-direction:column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: calc(var(--safe-top) + 18px);
+  padding-bottom: calc(var(--safe-bottom) + 120px);
+}
+
+.home-header{
+  padding: 0 24px 6px;
+}
+
+.date-eyebrow{
+  margin:0 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.2px;
+}
+
+.home-title{
+  margin:0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 44px;
+  letter-spacing: -0.5px;
+  color: var(--ink-1);
+}
+
+.board{
+  padding: 22px 20px 40px;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state{
+  margin-top: 60px;
+  text-align:center;
+  padding: 0 40px;
+  color: var(--ink-2);
+}
+.empty-glyph{
+  font-size: 34px;
+  margin-bottom: 10px;
+  color: var(--ink-3);
+}
+.empty-title{
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-1);
+  margin: 0 0 4px;
+}
+.empty-sub{
+  font-size: 14px;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+/* ---------- FAB ---------- */
+.fab{
+  position: fixed;
+  right: 24px;
+  bottom: calc(var(--safe-bottom) + 28px);
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: var(--shadow-fab);
+  z-index: 20;
+  transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast);
+}
+.fab:active{
+  transform: scale(0.90);
+}
+
+/* ---------- Toast ---------- */
+.toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 30px);
+  transform: translate(-50%, 20px);
+  background: rgba(28,28,30,0.92);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 18px;
+  border-radius: var(--r-pill);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+  z-index: 200;
+  white-space: nowrap;
+}
+.toast.show{
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

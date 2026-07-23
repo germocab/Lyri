@@ -1,0 +1,31 @@
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+
+@keyframes cardIn{
+  from{ opacity: 0; transform: translateY(14px) scale(0.97); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cardOut{
+  from{ opacity: 1; transform: scale(1); }
+  to{ opacity: 0; transform: scale(0.9); }
+}
+
+@keyframes toastPop{
+  from{ opacity: 0; transform: translate(-50%, 10px) scale(0.96); }
+  to{ opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes pulse{
+  0%,100%{ opacity: 1; }
+  50%{ opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
