@@ -675,13 +675,13 @@ function emptyState() {
 
 async function ensureLoaded() {
   if (!cache) {
-    cache = (await adapter.load()) || emptyState();
+    cache = (await localStorageAdapter.load()) || emptyState();
   }
   return cache;
 }
 
 async function persist() {
-  await adapter.save(cache);
+  await localStorageAdapter.save(cache);
 }
 
 function ensureBoard(state, dayKey) {
@@ -781,34 +781,33 @@ const noteStorage = {
  * ---------------------------------------------------------
  * Renders a single note as a card element. Purely presentational —
  * it takes a note object and an onOpen callback, and returns a DOM node.
+ *
+ * Cards are designed to be reused: `updateNoteCardContent` patches an
+ * existing card in place so editing one note never disturbs the rest
+ * of the board (no full re-render, no accidental replayed animations).
  */
 
 
 /**
  * @param {object} note
  * @param {(note, cardEl) => void} onOpen - called when the card is tapped
+ * @param {boolean} [animateIn=true] - play the entrance animation
  */
-function createNoteCard(note, onOpen) {
+function createNoteCard(note, onOpen, animateIn = true) {
   const card = el('article', {
-    class: `note-card variant-${note.variant} entering`,
+    class: `note-card variant-${note.variant}${animateIn ? ' entering' : ''}`,
     'data-id': note.id,
     role: 'button',
     tabindex: '0',
   });
 
-  if (note.title) {
-    card.appendChild(el('h3', { class: 'note-card-title', text: note.title }));
-  }
+  card.appendChild(el('h3', { class: 'note-card-title' }));
+  card.appendChild(el('p', { class: 'note-card-body' }));
+  card.appendChild(el('span', { class: 'note-card-time' }));
 
-  if (note.content) {
-    card.appendChild(el('p', { class: 'note-card-body', text: note.content }));
-  }
+  fillCardContent(card, note);
 
-  card.appendChild(
-    el('span', { class: 'note-card-time', text: formatTime(note.updatedAt) })
-  );
-
-  const open = () => onOpen(note, card);
+  const open = () => onOpen(getCardNote(card), card);
   card.addEventListener('click', open);
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -818,6 +817,33 @@ function createNoteCard(note, onOpen) {
   });
 
   return card;
+}
+
+/** Patches an existing card's content without touching its animation state */
+function updateNoteCardContent(cardEl, note) {
+  cardEl.className = `note-card variant-${note.variant}`;
+  fillCardContent(cardEl, note);
+}
+
+function fillCardContent(card, note) {
+  const titleEl = card.querySelector('.note-card-title');
+  const bodyEl = card.querySelector('.note-card-body');
+  const timeEl = card.querySelector('.note-card-time');
+
+  titleEl.textContent = note.title;
+  titleEl.hidden = !note.title;
+
+  bodyEl.textContent = note.content;
+  bodyEl.hidden = !note.content;
+
+  timeEl.textContent = formatTime(note.updatedAt);
+
+  // stash the latest note data on the element so click handlers stay fresh
+  card._note = note;
+}
+
+function getCardNote(cardEl) {
+  return cardEl._note;
 }
 /**
  * noteEditor
@@ -1004,7 +1030,7 @@ let currentDayKey = todayKey();
 async function init() {
   await noteStorage.init();
   renderHeader();
-  await renderBoard();
+  await renderBoard({ initial: true });
   watchForDayChange();
 }
 
@@ -1012,18 +1038,66 @@ function renderHeader() {
   dateEyebrowEl.textContent = formatDayKeyLong(currentDayKey);
 }
 
-/** Renders every note for the current day onto the board */
-async function renderBoard() {
+/**
+ * Reconciles the board with storage. Unlike a full re-render, this only
+ * touches what actually changed:
+ *   - new notes are inserted with an entrance animation
+ *   - edited notes are patched in place (no animation replay)
+ *   - removed notes play a leaving animation before their node is dropped
+ * This keeps the rest of the board perfectly still while you edit,
+ * which is what makes the app feel native instead of "re-rendered".
+ */
+async function renderBoard({ initial = false } = {}) {
   const notes = await noteStorage.getNotesForDay(currentDayKey);
+  const nextIds = new Set(notes.map((n) => n.id));
 
-  boardEl.innerHTML = '';
-  emptyStateEl.hidden = notes.length > 0;
+  // Remove cards for notes that no longer exist
+  for (const cardEl of Array.from(boardEl.children)) {
+    const id = cardEl.dataset.id;
+    if (!nextIds.has(id)) {
+      removeCardAnimated(cardEl);
+    }
+  }
 
+  // Insert/update cards in the correct order
+  let previousSibling = null;
   notes.forEach((note, i) => {
-    const card = createNoteCard(note, handleOpenNote);
-    card.style.animationDelay = `${Math.min(i, 8) * 35}ms`;
-    boardEl.appendChild(card);
+    let cardEl = boardEl.querySelector(`.note-card[data-id="${note.id}"]`);
+
+    if (!cardEl) {
+      cardEl = createNoteCard(note, handleOpenNote, true);
+      if (initial) cardEl.style.animationDelay = `${Math.min(i, 8) * 35}ms`;
+      insertAfter(cardEl, previousSibling);
+    } else {
+      updateNoteCardContent(cardEl, note);
+      // keep DOM order in sync with the (possibly reordered) note list
+      const desiredNext = previousSibling ? previousSibling.nextSibling : boardEl.firstChild;
+      if (cardEl !== desiredNext) insertAfter(cardEl, previousSibling);
+    }
+
+    previousSibling = cardEl;
   });
+
+  emptyStateEl.hidden = notes.length > 0;
+}
+
+function insertAfter(node, referenceNode) {
+  if (referenceNode) {
+    referenceNode.after(node);
+  } else {
+    boardEl.prepend(node);
+  }
+}
+
+function removeCardAnimated(cardEl) {
+  cardEl.classList.add('leaving');
+  cardEl.addEventListener(
+    'animationend',
+    () => cardEl.remove(),
+    { once: true }
+  );
+  // safety fallback in case the animation event doesn't fire
+  setTimeout(() => cardEl.remove(), 220);
 }
 
 /** Opens the editor for an existing note */
@@ -1076,7 +1150,7 @@ function watchForDayChange() {
     if (latest !== currentDayKey) {
       currentDayKey = latest;
       renderHeader();
-      await renderBoard();
+      await renderBoard({ initial: true });
       showToast('A new day has started');
     }
   }, 30_000);
