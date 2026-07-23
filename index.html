@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Today</title>
+<meta name="description" content="Every day has its own board." />
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Today" />
+<meta name="theme-color" content="#F5F5F7" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Neutral grayscale system, iOS/HIG inspired, single accent.
+   ============================================================ */
+:root{
+  /* -- Accent -- */
+  --accent: #007AFF;
+  --accent-press: #0062CC;
+  --danger: #FF3B30;
+
+  /* -- Grayscale (light) -- */
+  --bg: #F5F5F7;
+  --bg-elevated: #FFFFFF;
+  --bg-sunken: #ECECEE;
+  --stroke: rgba(60,60,67,0.10);
+  --stroke-strong: rgba(60,60,67,0.16);
+
+  --ink-1: #1C1C1E;   /* primary text */
+  --ink-2: #6E6E73;   /* secondary text */
+  --ink-3: #AEAEB2;   /* tertiary / placeholder */
+
+  --card-dark: #2C2C2E;      /* dark "idea" card */
+  --card-dark-text: #FFB020; /* amber text on dark card */
+
+  /* -- Elevation -- */
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.06);
+  --shadow-fab: 0 10px 24px rgba(0,122,255,0.35);
+  --shadow-sheet: 0 -8px 40px rgba(0,0,0,0.18);
+
+  /* -- Radius -- */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-pill: 999px;
+
+  /* -- Type -- */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+
+  /* -- Motion -- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 180ms;
+  --dur-med: 320ms;
+  --dur-slow: 480ms;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg: #000000;
+    --bg-elevated: #1C1C1E;
+    --bg-sunken: #141416;
+    --stroke: rgba(255,255,255,0.08);
+    --stroke-strong: rgba(255,255,255,0.14);
+
+    --ink-1: #F5F5F7;
+    --ink-2: #98989D;
+    --ink-3: #636366;
+
+    --card-dark: #3A3A3C;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-sheet: 0 -8px 40px rgba(0,0,0,0.5);
+  }
+}
+/* ============================================================
+   BASE & LAYOUT
+   ============================================================ */
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html,body{
+  height:100%;
+  overscroll-behavior-y: none;
+}
+
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* screens manage their own scroll */
+}
+
+button{ font-family: inherit; border: none; background: none; cursor: pointer; }
+textarea{ font-family: inherit; border: none; outline: none; resize: none; background: transparent; }
+
+.screen{
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ---------- Home screen ---------- */
+#home-screen{
+  display:flex;
+  flex-direction:column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: calc(var(--safe-top) + 18px);
+  padding-bottom: calc(var(--safe-bottom) + 120px);
+}
+
+.home-header{
+  padding: 0 24px 6px;
+}
+
+.date-eyebrow{
+  margin:0 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.2px;
+}
+
+.home-title{
+  margin:0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 44px;
+  letter-spacing: -0.5px;
+  color: var(--ink-1);
+}
+
+.board{
+  padding: 22px 20px 40px;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state{
+  margin-top: 60px;
+  text-align:center;
+  padding: 0 40px;
+  color: var(--ink-2);
+}
+.empty-glyph{
+  font-size: 34px;
+  margin-bottom: 10px;
+  color: var(--ink-3);
+}
+.empty-title{
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-1);
+  margin: 0 0 4px;
+}
+.empty-sub{
+  font-size: 14px;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+/* ---------- FAB ---------- */
+.fab{
+  position: fixed;
+  right: 24px;
+  bottom: calc(var(--safe-bottom) + 28px);
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: var(--shadow-fab);
+  z-index: 20;
+  transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast);
+}
+.fab:active{
+  transform: scale(0.90);
+}
+
+/* ---------- Toast ---------- */
+.toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 30px);
+  transform: translate(-50%, 20px);
+  background: rgba(28,28,30,0.92);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 18px;
+  border-radius: var(--r-pill);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+  z-index: 200;
+  white-space: nowrap;
+}
+.toast.show{
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+/* ============================================================
+   COMPONENTS — Note cards & Editor sheet
+   ============================================================ */
+
+/* ---------- Note card ---------- */
+.note-card{
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-lg);
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow-card);
+  transform-origin: center;
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+
+.note-card.variant-dark{
+  background: var(--card-dark);
+  border-color: rgba(255,255,255,0.06);
+}
+.note-card.variant-dark .note-card-title,
+.note-card.variant-dark .note-card-body{
+  color: var(--card-dark-text);
+}
+.note-card.variant-dark .note-card-time{
+  color: rgba(255,176,32,0.6);
+}
+
+.note-card-title{
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-1);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.note-card-body{
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.note-card-time{
+  display:block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.2px;
+}
+
+.note-card:active{
+  transform: scale(0.98);
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+/* card entrance (staggered) */
+.note-card.entering{
+  animation: cardIn var(--dur-slow) var(--ease-out-expo) both;
+}
+.note-card.leaving{
+  animation: cardOut var(--dur-fast) var(--ease-standard) both;
+}
+
+/* ---------- Editor screen ---------- */
+.editor-screen{
+  pointer-events: none;
+  z-index: 100;
+}
+.editor-screen.open{
+  pointer-events: auto;
+}
+
+.editor-backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.28);
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-standard);
+}
+.editor-screen.open .editor-backdrop{
+  opacity: 1;
+}
+
+.editor-sheet{
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated);
+  border-radius: 32px 32px 0 0;
+  display:flex;
+  flex-direction:column;
+  box-shadow: var(--shadow-sheet);
+  transform: translateY(100%) scale(0.96);
+  opacity: 0;
+  transition: transform var(--dur-med) var(--ease-out-expo), opacity var(--dur-med) var(--ease-standard);
+  padding-top: var(--safe-top);
+}
+.editor-screen.open .editor-sheet{
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* card->editor shared-element mode: sheet starts from card rect */
+.editor-sheet.from-card{
+  transition: none;
+}
+
+.editor-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 16px 12px 10px 18px;
+  flex-shrink:0;
+}
+
+.editor-close{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+.editor-close:active{ transform: scale(0.88); }
+
+.editor-meta{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.2px;
+}
+
+.editor-save{
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  transition: opacity var(--dur-fast), transform var(--dur-fast) var(--ease-standard);
+}
+.editor-save:active{ transform: scale(0.94); opacity: 0.6; }
+
+.editor-body{
+  flex:1;
+  overflow-y: auto;
+  padding: 6px 24px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.editor-title{
+  width:100%;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--ink-1);
+  line-height: 1.25;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.editor-title::placeholder{ color: var(--ink-3); }
+
+.editor-content{
+  width:100%;
+  min-height: 40vh;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-1);
+}
+.editor-content::placeholder{ color: var(--ink-3); }
+
+.editor-footer{
+  flex-shrink:0;
+  padding: 10px 24px calc(var(--safe-bottom) + 18px);
+  border-top: 1px solid var(--stroke);
+}
+
+.editor-delete{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: rgba(255,59,48,0.08);
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 600;
+  transition: transform var(--dur-fast) var(--ease-standard), background var(--dur-fast);
+}
+.editor-delete:active{
+  transform: scale(0.97);
+  background: rgba(255,59,48,0.16);
+}
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+
+@keyframes cardIn{
+  from{ opacity: 0; transform: translateY(14px) scale(0.97); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cardOut{
+  from{ opacity: 1; transform: scale(1); }
+  to{ opacity: 0; transform: scale(0.9); }
+}
+
+@keyframes toastPop{
+  from{ opacity: 0; transform: translate(-50%, 10px) scale(0.96); }
+  to{ opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes pulse{
+  0%,100%{ opacity: 1; }
+  50%{ opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ================= HOME SCREEN ================= -->
+<main id="home-screen" class="screen">
+
+  <header class="home-header">
+    <p id="date-eyebrow" class="date-eyebrow">—</p>
+    <h1 class="home-title">Today</h1>
+  </header>
+
+  <section id="board" class="board" aria-label="Today's board">
+    <!-- note cards injected here -->
+  </section>
+
+  <div id="empty-state" class="empty-state" hidden>
+    <div class="empty-glyph">✎</div>
+    <p class="empty-title">Nothing here yet</p>
+    <p class="empty-sub">Tap + to start today's first note.</p>
+  </div>
+
+  <button id="fab" class="fab" aria-label="New note">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <path d="M13 4V22M4 13H22" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+</main>
+
+<!-- ================= NOTE EDITOR (full screen) ================= -->
+<section id="editor-screen" class="screen editor-screen" aria-hidden="true">
+  <div class="editor-backdrop" id="editor-backdrop"></div>
+
+  <div id="editor-sheet" class="editor-sheet">
+    <header class="editor-topbar">
+      <button id="editor-close" class="editor-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M2 2L16 16M16 2L2 16" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span id="editor-meta" class="editor-meta"></span>
+      <button id="editor-save" class="editor-save">Save</button>
+    </header>
+
+    <div class="editor-body">
+      <textarea id="editor-title" class="editor-title" placeholder="Title" rows="1" maxlength="120"></textarea>
+      <textarea id="editor-content" class="editor-content" placeholder="Write something…"></textarea>
+    </div>
+
+    <footer class="editor-footer">
+      <button id="editor-delete" class="editor-delete" hidden>
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+          <path d="M2.5 4.5H14.5M6 4.5V2.8C6 2.36 6.36 2 6.8 2H10.2C10.64 2 11 2.36 11 2.8V4.5M6.8 7.5V12.5M10.2 7.5V12.5M3.7 4.5L4.3 14.2C4.34 14.9 4.92 15.4 5.6 15.4H11.4C12.08 15.4 12.66 14.9 12.7 14.2L13.3 4.5" stroke="#FF3B30" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Delete Note
+      </button>
+    </footer>
+  </div>
+</section>
+
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<script>
+/**
+ * Date utilities
+ * The app organizes everything around a "day key": YYYY-MM-DD
+ * derived from the user's LOCAL time, not UTC — a board should
+ * change at local midnight, not at UTC midnight.
+ */
+
+/** Returns today's day key, e.g. "2026-07-22" */
+function todayKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Formats a day key as "Wednesday, July 22nd" */
+function formatDayKeyLong(dayKey) {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+  const month = date.toLocaleDateString(undefined, { month: 'long' });
+  return `${weekday}, ${month} ${ordinal(d)}`;
+}
+
+/** Formats a timestamp as a short time, e.g. "9:41 AM" */
+function formatTime(timestamp) {
+  return new Date(timestamp).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/** Adds the correct ordinal suffix to a day number */
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+/** True if a given day key refers to today */
+function isToday(dayKey) {
+  return dayKey === todayKey();
+}
+/**
+ * Tiny DOM helpers to keep component code readable.
+ */
+
+function qs(selector, root = document) {
+  return root.querySelector(selector);
+}
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key.startsWith('on') && typeof value === 'function') {
+      node.addEventListener(key.slice(2).toLowerCase(), value);
+    } else {
+      node.setAttribute(key, value);
+    }
+  }
+  for (const child of [].concat(children)) {
+    if (child) node.appendChild(child);
+  }
+  return node;
+}
+
+/** Auto-grow a textarea to fit its content (used for the title field) */
+function autoGrow(textarea) {
+  const resize = () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+  textarea.addEventListener('input', resize);
+  resize();
+}
+
+/** requestAnimationFrame-based delay, avoids layout thrash before animating */
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+/**
+ * localStorageAdapter
+ * ---------------------------------------------------------
+ * The lowest-level persistence layer. It knows nothing about
+ * "notes" or "boards" — it only stores/retrieves a single JSON
+ * blob under one key. This is intentional: swapping this file
+ * for a Supabase (or any async remote) adapter later should
+ * require no changes anywhere else in the app, as long as the
+ * new adapter implements the same three methods and returns
+ * Promises (this one just resolves immediately).
+ *
+ * Expected interface for any future adapter:
+ *   async load()          -> parsed data or null
+ *   async save(data)       -> void
+ *   async clear()          -> void
+ */
+
+const STORAGE_KEY = 'today-app:v1';
+
+const localStorageAdapter = {
+  async load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      console.error('[storage] failed to load', err);
+      return null;
+    }
+  },
+
+  async save(data) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (err) {
+      console.error('[storage] failed to save', err);
+    }
+  },
+
+  async clear() {
+    localStorage.removeItem(STORAGE_KEY);
+  },
+};
+/**
+ * noteStorage
+ * ---------------------------------------------------------
+ * Domain-level persistence for boards & notes. This is the ONLY
+ * module the rest of the app should talk to for data — it hides
+ * the underlying adapter (localStorage today, Supabase tomorrow)
+ * behind a small, storage-agnostic API.
+ *
+ * Data shape:
+ * {
+ *   boards: {
+ *     "2026-07-22": {
+ *       dayKey: "2026-07-22",
+ *       noteIds: ["id1", "id2", ...]   // ordered, newest first
+ *     }
+ *   },
+ *   notes: {
+ *     "id1": {
+ *       id, title, content, dayKey,
+ *       createdAt, updatedAt, variant
+ *     }
+ *   }
+ * }
+ */
+
+
+let cache = null; // in-memory mirror, hydrated once on init
+
+function emptyState() {
+  return { boards: {}, notes: {} };
+}
+
+async function ensureLoaded() {
+  if (!cache) {
+    cache = (await adapter.load()) || emptyState();
+  }
+  return cache;
+}
+
+async function persist() {
+  await adapter.save(cache);
+}
+
+function ensureBoard(state, dayKey) {
+  if (!state.boards[dayKey]) {
+    state.boards[dayKey] = { dayKey, noteIds: [] };
+  }
+  return state.boards[dayKey];
+}
+
+function makeId() {
+  return `n_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Deterministically alternates card style, echoing the prototype's mixed board */
+function variantFor(index) {
+  return index % 5 === 0 ? 'dark' : 'light';
+}
+
+const noteStorage = {
+  /** Call once on boot */
+  async init() {
+    await ensureLoaded();
+  },
+
+  /** Returns all notes for a given day, newest first */
+  async getNotesForDay(dayKey) {
+    const state = await ensureLoaded();
+    const board = state.boards[dayKey];
+    if (!board) return [];
+    return board.noteIds
+      .map((id) => state.notes[id])
+      .filter(Boolean)
+      .map((note, i) => ({ ...note, variant: variantFor(i) }));
+  },
+
+  /** Returns a single note by id */
+  async getNote(id) {
+    const state = await ensureLoaded();
+    return state.notes[id] || null;
+  },
+
+  /**
+   * Creates a note. Notes are ALWAYS created on today's board,
+   * regardless of which day the user is currently viewing.
+   */
+  async createNote({ title, content }) {
+    const state = await ensureLoaded();
+    const dayKey = todayKey();
+    const board = ensureBoard(state, dayKey);
+    const now = Date.now();
+
+    const note = {
+      id: makeId(),
+      title: title?.trim() || '',
+      content: content?.trim() || '',
+      dayKey,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    state.notes[note.id] = note;
+    board.noteIds.unshift(note.id);
+    await persist();
+    return note;
+  },
+
+  /** Edits an existing note (allowed from any day it belongs to) */
+  async updateNote(id, { title, content }) {
+    const state = await ensureLoaded();
+    const note = state.notes[id];
+    if (!note) throw new Error(`Note ${id} not found`);
+
+    note.title = title?.trim() || '';
+    note.content = content?.trim() || '';
+    note.updatedAt = Date.now();
+
+    await persist();
+    return note;
+  },
+
+  /** Deletes a note from its board */
+  async deleteNote(id) {
+    const state = await ensureLoaded();
+    const note = state.notes[id];
+    if (!note) return;
+
+    const board = state.boards[note.dayKey];
+    if (board) {
+      board.noteIds = board.noteIds.filter((n) => n !== id);
+    }
+    delete state.notes[id];
+    await persist();
+  },
+};
+/**
+ * noteCard
+ * ---------------------------------------------------------
+ * Renders a single note as a card element. Purely presentational —
+ * it takes a note object and an onOpen callback, and returns a DOM node.
+ */
+
+
+/**
+ * @param {object} note
+ * @param {(note, cardEl) => void} onOpen - called when the card is tapped
+ */
+function createNoteCard(note, onOpen) {
+  const card = el('article', {
+    class: `note-card variant-${note.variant} entering`,
+    'data-id': note.id,
+    role: 'button',
+    tabindex: '0',
+  });
+
+  if (note.title) {
+    card.appendChild(el('h3', { class: 'note-card-title', text: note.title }));
+  }
+
+  if (note.content) {
+    card.appendChild(el('p', { class: 'note-card-body', text: note.content }));
+  }
+
+  card.appendChild(
+    el('span', { class: 'note-card-time', text: formatTime(note.updatedAt) })
+  );
+
+  const open = () => onOpen(note, card);
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      open();
+    }
+  });
+
+  return card;
+}
+/**
+ * noteEditor
+ * ---------------------------------------------------------
+ * Controls the full-screen editor sheet that already lives in
+ * index.html. Handles:
+ *   - shared-element (FLIP) open animation from a tapped card
+ *   - reverse animation on close
+ *   - save / delete actions, delegated back to the caller
+ *
+ * This module owns no data — it's told what to edit and reports
+ * back via callbacks, keeping storage concerns out of the UI layer.
+ */
+
+
+const screen = qs('#editor-screen');
+const sheet = qs('#editor-sheet');
+const backdrop = qs('#editor-backdrop');
+const titleField = qs('#editor-title');
+const contentField = qs('#editor-content');
+const metaLabel = qs('#editor-meta');
+const closeBtn = qs('#editor-close');
+const saveBtn = qs('#editor-save');
+const deleteBtn = qs('#editor-delete');
+
+autoGrow(titleField);
+
+let activeNote = null; // note being edited, or null when creating
+let sourceCardEl = null; // the card we animated from, for the reverse animation
+let onSave = null;
+let onDelete = null;
+
+/**
+ * Opens the editor.
+ * @param {object|null} note - existing note, or null for a new note
+ * @param {HTMLElement|null} cardEl - the card element tapped (for FLIP), or null for FAB
+ * @param {{save: Function, delete: Function}} handlers
+ */
+async function openEditor(note, cardEl, handlers) {
+  activeNote = note;
+  sourceCardEl = cardEl;
+  onSave = handlers.save;
+  onDelete = handlers.delete;
+
+  titleField.value = note?.title || '';
+  contentField.value = note?.content || '';
+  deleteBtn.hidden = !note;
+  metaLabel.textContent = note ? `Edited ${formatTime(note.updatedAt)}` : 'New note';
+
+  autoGrow(titleField);
+
+  screen.setAttribute('aria-hidden', 'false');
+  screen.classList.add('open');
+
+  if (cardEl) {
+    await animateFromCard(cardEl);
+  } else {
+    sheet.classList.remove('from-card');
+    sheet.style.transform = '';
+  }
+
+  // Focus without triggering iOS scroll jump
+  requestAnimationFrame(() => {
+    (note ? contentField : titleField).focus({ preventScroll: true });
+  });
+}
+
+/** Runs the FLIP transform: sheet starts sized/positioned like the card, then animates to full screen */
+async function animateFromCard(cardEl) {
+  const startRect = cardEl.getBoundingClientRect();
+  const endRect = { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+
+  const scaleX = startRect.width / endRect.width;
+  const scaleY = startRect.height / endRect.height;
+  const translateX = startRect.left - endRect.left + (startRect.width - endRect.width) / 2;
+  const translateY = startRect.top - endRect.top + (startRect.height - endRect.height) / 2;
+
+  sheet.classList.add('from-card');
+  sheet.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+  sheet.style.opacity = '0.4';
+  sheet.style.borderRadius = '26px';
+
+  await nextFrame();
+
+  sheet.style.transition = `transform var(--dur-med) var(--ease-out-expo), opacity var(--dur-med), border-radius var(--dur-med)`;
+  sheet.style.transition =
+    'transform 380ms cubic-bezier(0.16,1,0.3,1), opacity 280ms ease, border-radius 380ms ease';
+  sheet.style.transform = 'translate(0,0) scale(1,1)';
+  sheet.style.opacity = '1';
+  sheet.style.borderRadius = '32px 32px 0 0';
+
+  cardEl.style.visibility = 'hidden';
+}
+
+/** Reverses the FLIP animation back into the source card, or fades out if opened via FAB */
+async function closeEditor() {
+  if (sourceCardEl && sourceCardEl.isConnected) {
+    const startRect = sourceCardEl.getBoundingClientRect();
+    const endRect = { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+
+    const scaleX = startRect.width / endRect.width;
+    const scaleY = startRect.height / endRect.height;
+    const translateX = startRect.left - endRect.left + (startRect.width - endRect.width) / 2;
+    const translateY = startRect.top - endRect.top + (startRect.height - endRect.height) / 2;
+
+    sheet.style.transition =
+      'transform 340ms cubic-bezier(0.32,0,0.67,0), opacity 260ms ease, border-radius 340ms ease';
+    sheet.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+    sheet.style.opacity = '0.5';
+    sheet.style.borderRadius = '26px';
+
+    await waitForTransition(sheet);
+    sourceCardEl.style.visibility = '';
+  }
+
+  screen.classList.remove('open');
+  screen.setAttribute('aria-hidden', 'true');
+
+  await waitForTransition(backdrop);
+
+  // reset inline styles set during FLIP so next open starts clean
+  sheet.style.transition = '';
+  sheet.style.transform = '';
+  sheet.style.opacity = '';
+  sheet.style.borderRadius = '';
+  sheet.classList.remove('from-card');
+
+  activeNote = null;
+  sourceCardEl = null;
+}
+
+function waitForTransition(node) {
+  return new Promise((resolve) => {
+    const done = () => {
+      node.removeEventListener('transitionend', done);
+      resolve();
+    };
+    node.addEventListener('transitionend', done);
+    // safety fallback in case transitionend doesn't fire
+    setTimeout(resolve, 420);
+  });
+}
+
+async function handleSave() {
+  const title = titleField.value.trim();
+  const content = contentField.value.trim();
+
+  if (!title && !content) {
+    await closeEditor();
+    return;
+  }
+
+  await onSave({ id: activeNote?.id, title, content });
+  await closeEditor();
+}
+
+async function handleDelete() {
+  if (!activeNote) return;
+  await onDelete(activeNote.id);
+  await closeEditor();
+}
+
+closeBtn.addEventListener('click', () => handleSave());
+saveBtn.addEventListener('click', () => handleSave());
+deleteBtn.addEventListener('click', () => handleDelete());
+backdrop.addEventListener('click', () => handleSave());
+/**
+ * app.js — entry point
+ * ---------------------------------------------------------
+ * Boots the app: hydrates storage, renders today's board,
+ * wires the FAB and editor, and watches for the day rolling
+ * over at local midnight so the board refreshes automatically.
+ */
+
+
+const boardEl = qs('#board');
+const emptyStateEl = qs('#empty-state');
+const dateEyebrowEl = qs('#date-eyebrow');
+const fab = qs('#fab');
+const toastEl = qs('#toast');
+
+let currentDayKey = todayKey();
+
+async function init() {
+  await noteStorage.init();
+  renderHeader();
+  await renderBoard();
+  watchForDayChange();
+}
+
+function renderHeader() {
+  dateEyebrowEl.textContent = formatDayKeyLong(currentDayKey);
+}
+
+/** Renders every note for the current day onto the board */
+async function renderBoard() {
+  const notes = await noteStorage.getNotesForDay(currentDayKey);
+
+  boardEl.innerHTML = '';
+  emptyStateEl.hidden = notes.length > 0;
+
+  notes.forEach((note, i) => {
+    const card = createNoteCard(note, handleOpenNote);
+    card.style.animationDelay = `${Math.min(i, 8) * 35}ms`;
+    boardEl.appendChild(card);
+  });
+}
+
+/** Opens the editor for an existing note */
+async function handleOpenNote(note, cardEl) {
+  await openEditor(note, cardEl, {
+    save: handleSaveNote,
+    delete: handleDeleteNote,
+  });
+}
+
+/** Opens a blank editor for a brand-new note (always created on today's board) */
+async function handleCreateNote() {
+  await openEditor(null, null, {
+    save: handleSaveNote,
+    delete: handleDeleteNote,
+  });
+}
+
+async function handleSaveNote({ id, title, content }) {
+  if (!title && !content) return; // nothing to save
+
+  if (id) {
+    await noteStorage.updateNote(id, { title, content });
+    showToast('Note updated');
+  } else {
+    await noteStorage.createNote({ title, content });
+    showToast('Note added to today');
+  }
+  await renderBoard();
+}
+
+async function handleDeleteNote(id) {
+  await noteStorage.deleteNote(id);
+  showToast('Note deleted');
+  await renderBoard();
+}
+
+let toastTimer = null;
+function showToast(message) {
+  toastEl.textContent = message;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+/** Polls for local midnight so a fresh, empty board appears without a reload */
+function watchForDayChange() {
+  setInterval(async () => {
+    const latest = todayKey();
+    if (latest !== currentDayKey) {
+      currentDayKey = latest;
+      renderHeader();
+      await renderBoard();
+      showToast('A new day has started');
+    }
+  }, 30_000);
+}
+
+fab.addEventListener('click', handleCreateNote);
+
+init();
+
+</script>
+</body>
+</html>
